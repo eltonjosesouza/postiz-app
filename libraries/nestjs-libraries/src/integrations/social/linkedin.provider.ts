@@ -16,6 +16,7 @@ import {
   ValidityMedia,
 } from '@gitroom/nestjs-libraries/integrations/social.abstract';
 import { Integration } from '@prisma/client';
+import { buildLinkedInContent } from './linkedin-article';
 import { PostPlug } from '@gitroom/helpers/decorators/post.plug';
 import { LinkedinDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/linkedin.dto';
 import imageToPDF from 'image-to-pdf';
@@ -673,30 +674,6 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
     return await (keepFormat ? pipeline : pipeline.toFormat('jpeg')).toBuffer();
   }
 
-  private buildPostContent(isPdf: boolean, mediaIds: string[], pdfTitle?: string) {
-    if (mediaIds.length === 0) {
-      return {};
-    }
-
-    if (mediaIds.length === 1) {
-      return {
-        content: {
-          media: {
-            ...(isPdf ? { title: pdfTitle || 'slides' } : {}),
-            id: mediaIds[0],
-          },
-        },
-      };
-    }
-
-    return {
-      content: {
-        multiImage: {
-          images: mediaIds.map((id) => ({ id })),
-        },
-      },
-    };
-  }
 
   private createLinkedInPostPayload(
     id: string,
@@ -704,7 +681,8 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
     message: string,
     mediaIds: string[],
     isPdf: boolean,
-    pdfTitle?: string
+    pdfTitle?: string,
+    articleUrl?: string
   ) {
     const author =
       type === 'personal' ? `urn:li:person:${id}` : `urn:li:organization:${id}`;
@@ -718,7 +696,7 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
         targetEntities: [] as string[],
         thirdPartyDistributionChannels: [] as string[],
       },
-      ...this.buildPostContent(isPdf, mediaIds, pdfTitle),
+      ...buildLinkedInContent(isPdf, mediaIds, pdfTitle, articleUrl),
       lifecycleState: 'PUBLISHED',
       isReshareDisabledByAuthor: false,
     };
@@ -742,7 +720,8 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
       firstPost.message,
       mediaIds,
       isPdf,
-      pdfTitle
+      pdfTitle,
+      firstPost.link
     );
 
     const response = await this.fetch(`https://api.linkedin.com/rest/posts`, {

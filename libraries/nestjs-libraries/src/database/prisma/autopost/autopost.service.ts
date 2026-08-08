@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { PostsService } from '@gitroom/nestjs-libraries/database/prisma/posts/posts.service';
 import Parser from 'rss-parser';
+import { extractLatestRssItem } from './rss-item';
 import { IntegrationService } from '@gitroom/nestjs-libraries/database/prisma/integrations/integration.service';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { TemporalService } from 'nestjs-temporal-core';
@@ -27,6 +28,7 @@ interface WorkflowChannelsState {
   body: AutoPost;
   description: string;
   image: string;
+  articleUrl: string;
   id: string;
   load: {
     date: string;
@@ -132,37 +134,21 @@ export class AutopostService {
     return data;
   }
 
-  async loadXML(url: string) {
+  async loadXML(url: string): Promise<
+    | ({ success: true } & ReturnType<typeof extractLatestRssItem>)
+    | { success: false }
+  > {
     try {
       const { items } = await parser.parseURL(url);
-      const findLast = items.reduce(
-        (all: any, current: any) => {
-          if (dayjs(current.pubDate).isAfter(all.pubDate)) {
-            return current;
-          }
-          return all;
-        },
-        { pubDate: dayjs().subtract(100, 'years') }
-      );
-
       return {
-        success: true,
-        date: findLast.pubDate,
-        url: findLast.link,
-        description: striptags(
-          findLast?.['content:encoded'] ||
-            findLast?.content ||
-            findLast?.description ||
-            ''
-        )
-          .replace(/\n/g, ' ')
-          .trim(),
+        success: true as const,
+        ...extractLatestRssItem(items),
       };
     } catch (err) {
       /** sent **/
     }
 
-    return { success: false };
+    return { success: false as const };
   }
 
   static state = () =>
@@ -177,6 +163,7 @@ export class AutopostService {
         description: null,
         load: null,
         image: null,
+        articleUrl: null,
         integrations: null,
         id: null,
       },
@@ -271,7 +258,7 @@ export class AutopostService {
       date: nextTime + 'Z',
       order: makeId(10),
       shortLink: false,
-      type: 'draft',
+      type: 'queue',
       tags: [],
       posts: state.integrations.map((i) => ({
         settings: {
@@ -286,10 +273,8 @@ export class AutopostService {
           {
             id: makeId(10),
             delay: 0,
-            content:
-              state.description.replace(/\n/g, '\n\n') +
-              '\n\n' +
-              state.load.url,
+            content: state.description.replace(/\n/g, '\n\n'),
+            link: state.articleUrl,
             image: !state.image
               ? []
               : [
@@ -365,6 +350,8 @@ export class AutopostService {
       id,
       body: getPost,
       load,
+      image: load.image,
+      articleUrl: load.url,
       integrations: integrationsToSend,
     });
   }

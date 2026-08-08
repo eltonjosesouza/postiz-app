@@ -135,6 +135,7 @@ export type PostDetails<T = any> = {
   message: string;
   settings: T;
   media?: MediaContent[];
+  link?: string;
   poll?: PollDetails;
 };
 
