@@ -511,7 +511,7 @@ export class PostsRepository {
   }
 
   async createOrUpdatePost(
-    state: 'draft' | 'schedule' | 'now' | 'update',
+    state: 'draft' | 'queue' | 'schedule' | 'now' | 'update',
     orgId: string,
     date: string,
     body: PostBody,
