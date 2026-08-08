@@ -194,6 +194,7 @@ export class PostActivity {
             getIntegration.mentionFormat
           ),
           settings: JSON.parse(p.settings || '{}'),
+          link: JSON.parse(p.settings || '{}').article_url,
           media: await this._postService.updateMedia(
             p.id,
             JSON.parse(p.image || '[]'),
@@ -255,6 +256,7 @@ export class PostActivity {
           getIntegration.mentionFormat
         ),
         settings: JSON.parse(p.settings || '{}'),
+          link: JSON.parse(p.settings || '{}').article_url,
         media: await this._postService.updateMedia(
           p.id,
           JSON.parse(p.image || '[]'),

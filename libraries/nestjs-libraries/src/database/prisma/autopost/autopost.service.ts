@@ -264,6 +264,7 @@ export class AutopostService {
         settings: {
           __type: i.providerIdentifier as any,
           title: '',
+          article_url: state.articleUrl,
           tags: [],
           subreddit: [],
         },

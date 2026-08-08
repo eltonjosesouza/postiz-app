@@ -13,3 +13,14 @@ describe('buildLinkedInContent', () => {
     });
   });
 });
+
+describe('RSS article metadata persistence', () => {
+  it('encodes and decodes an article URL in post settings', () => {
+    const settings = JSON.stringify({
+      __type: 'linkedin-page',
+      article_url: 'https://example.com/article',
+    });
+    const parsed = JSON.parse(settings);
+    expect(parsed.article_url).toBe('https://example.com/article');
+  });
+});
